@@ -19,7 +19,8 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 // AfpsCharacter
 
 AfpsCharacter::AfpsCharacter():
-CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionCompleted))
+CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionCompleted)),
+FindSessionsCompleteDelegate(FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionCompleted))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -150,6 +151,11 @@ void AfpsCharacter::CreateGameSession()
 	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
 }
 
+void AfpsCharacter::JoinGameSessin()
+{
+	// Find Game Session
+}
+
 void AfpsCharacter::OnCreateSessionCompleted(FName SessionName, bool bWasSuccessful)
 {
 	/*BroadCast가 잘되었는지 Bool로 확인
@@ -171,6 +177,10 @@ void AfpsCharacter::OnCreateSessionCompleted(FName SessionName, bool bWasSuccess
 		}
 			
 	}
+}
+
+void AfpsCharacter::OnFindSessionCompleted(bool bWasSuccessful)
+{
 }
 
 //////////////////////////////////////////////////////////////////////////
