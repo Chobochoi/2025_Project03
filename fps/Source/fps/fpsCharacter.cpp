@@ -9,9 +9,11 @@
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+//#include "ImaginaryBlueprintData.h"
 #include "InputActionValue.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
+#include "Online/OnlineSessionNames.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -123,8 +125,8 @@ void AfpsCharacter::CreateGameSession()
 		return;
 	}
 
-	auto ExsitingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
-	if (ExsitingSession != nullptr)
+	auto Exsiting = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
+	if (Exsiting != nullptr)
 	{
 		OnlineSessionInterface->DestroySession(NAME_GameSession);
 	}
@@ -140,6 +142,7 @@ void AfpsCharacter::CreateGameSession()
 	 * 4. 지역이 있고, 지역에서 발생하는 세션 검색
 	 * 5. 스팀이 세션을 광고해주는 활성화
 	 * 6. 우리지역에서 진행 중인 세션을 찾기위해 활성화
+	 * 7. UE 버전 상 세션을 찾을 수 없다면 세션 설정으로 설정하기
 	 */
 	SessionSettings->bIsLANMatch = false;	
 	SessionSettings->NumPublicConnections = 4;
@@ -147,13 +150,35 @@ void AfpsCharacter::CreateGameSession()
 	SessionSettings->bAllowJoinViaPresence = true;
 	SessionSettings->bShouldAdvertise = true;
 	SessionSettings->bUsesPresence = true;
+	//SessionSettings->bUseLobbiesIfAvailable = true;
+		
 	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
 	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
 }
 
-void AfpsCharacter::JoinGameSessin()
+void AfpsCharacter::JoinGameSession()
 {
 	// Find Game Session
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
+
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	SessionSearch->MaxSearchResults = 10000;
+	// Lan 사용은 하지 않을 것이니 False로
+	SessionSearch->bIsLanQuery = false;
+	/* UE 5.3 이후 버전에는 SEARCH_PRESENCE를 Key 값으로 불러오기 위해서는
+	 * #include "Online/OnlineSessionNames.h" 를 포함시켜야 한다.
+	 * 세션을 찾기 위함
+	 */
+	SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearch.ToSharedRef());
+	
 }
 
 void AfpsCharacter::OnCreateSessionCompleted(FName SessionName, bool bWasSuccessful)
@@ -181,6 +206,15 @@ void AfpsCharacter::OnCreateSessionCompleted(FName SessionName, bool bWasSuccess
 
 void AfpsCharacter::OnFindSessionCompleted(bool bWasSuccessful)
 {
+	for (auto Result : SessionSearch->SearchResults)
+	{
+		FString Id = Result.GetSessionIdStr();
+		FString User = Result.Session.OwningUserName;
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Cyan, FString::Printf(TEXT("Id : %s, User : %s"), *Id, *User));
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

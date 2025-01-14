@@ -93,7 +93,7 @@ protected:
 	void CreateGameSession();
 
 	UFUNCTION(BlueprintCallable)
-	void JoinGameSessin();
+	void JoinGameSession();
 
 	void OnCreateSessionCompleted(FName SessionName, bool bWasSuccessful);
 	// 단순히 Find Session을 했는지 bool로 변환
@@ -102,6 +102,7 @@ protected:
 private:
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
 	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 	
 };
 
